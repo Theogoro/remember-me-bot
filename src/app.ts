@@ -1,9 +1,10 @@
 import { Message } from 'telegraf/typings/core/types/typegram';
 import TelegramBot from './bot';
-import { cleanData } from './services/gemini';
+import { cleanData, generateEventQuery } from './services/gemini';
 import { Commands, EventAI } from './types/bot';
 import env from './utils/env';
-import { createEvent } from './services/calendar';
+import { createEvent, listEvents } from './services/calendar';
+import { calendar_v3 } from 'googleapis';
 
 
 
@@ -31,6 +32,32 @@ function main() {
         });
       } catch (error) {
         ctx.reply('Error creating event - ' + error);
+      }
+    },
+    getEvents: async ctx => {
+      try {
+        ctx.reply('Getting events...');
+        const message = ctx.message as Message.TextMessage;
+        const query = await generateEventQuery(message.text || '');
+        const queryObj = JSON.parse(query);
+        console.log("Query:",{ queryObj });
+        const events = await listEvents(queryObj);
+        const { items } = events.data;
+        items?.forEach((event: calendar_v3.Schema$Event) => {
+          let start = 'All Day';
+          if (event.start?.dateTime) {
+            const date = new Date(event.start.dateTime);
+            start = date.toLocaleString();
+          }
+          if (event.start?.date) {
+            start = event.start.date;
+          }
+          // const start = event.start?.dateTime || event.start?.date || 'All Day'
+
+          ctx.reply(`${start} - ${event.summary}`);
+        });
+      } catch (error) {
+        ctx.reply('Error getting events - ' + error);
       }
     }
   };

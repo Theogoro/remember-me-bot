@@ -3,17 +3,12 @@ import { GoogleAuth } from '../utils/google-auth';
 import { EventAI } from '../types/bot';
 import env from '../utils/env';
 
-function listEvents() {
-  return GoogleAuth.getInstance().authorize().then(auth => {
-    const calendar = google.calendar({ version: 'v3', auth });
-    return calendar.events.list({
-      calendarId: 'primary',
-      timeMin: (new Date()).toISOString(),
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
-  });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const listEvents = async (query?: any) => {
+  const auth = await GoogleAuth.getInstance().authorize();
+  const calendar = google.calendar({ version: 'v3', auth });
+  query = {...query, calendarId: env.calendarId};
+  return calendar.events.list(query);
 }
 
 async function createEvent(event: EventAI) {
